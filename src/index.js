@@ -1,14 +1,19 @@
 import express from "express";
 
-import {config} from './config/index.js';
-import connectDB from './config/db.js';
+import {config} from './config/env.config.js';
+import {connectDB} from './config/db.js';
 
 import userRoutes from "./routes/user.routes.js";
+
+import productRoutes from './routes/products.routes.js';
 
 const app = express();
 
 app.use(express.json());
+
+//Rutas  
 app.use("/api/users", userRoutes);
+app.use('/api/products', productRoutes);
 
 app.get("/", (req, res) => {
     res.send(`ShipNow API v1 - corriendo en ${config.NODE_ENV} mode`);

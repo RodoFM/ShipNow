@@ -1,30 +1,14 @@
-import express from "express";
-import UserController from "../controllers/user.controller.js";
+//Los archivos de routes/ quedan mínimos: solo conectan el path con el método del Controller
+import { Router } from 'express';
+import UserController from '../controllers/user.controller.js';
 
-const router = express.Router();
+const router = Router();
 
-//QUERY PARA TRAER SEGUN NOMBRE, ROLE
-router.get("/", UserController.getAll);
-
-router.get("/:id", (req, res) => {
-    const { id } = req.params;
-    res.send(`User ID: ${id}`);
-});
-
-router.post("/", (req, res) => {
-    const { name, email } = req.body;
-    res.send(`User created: ${name}, ${email}`);
-});
-
-router.patch('/:id', (req, res) => {
-    const { id } = req.params;
-    const { name, email } = req.body;
-    res.send(`User updated: ID ${id}, Name: ${name}, Email: ${email}`);
-});
-
-router.delete("/:id", (req, res) => {
-    const { id } = req.params;
-    res.send(`User with ID: ${id}`);
-});
+// Cada ruta solo conecta el path con el método del Controller
+router.get('/', UserController.getAll);        // GET    /users
+router.get('/:id', UserController.getById);    // GET    /users/:id
+router.post('/', UserController.create);       // POST   /users
+router.put('/:id', UserController.update);     // PUT    /users/:id
+router.delete('/:id', UserController.delete);  // DELETE /users/:id
 
 export default router;

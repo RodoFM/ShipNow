@@ -1,7 +1,8 @@
 {
   "name": "shipnow",
   "version": "1.0.0",
-  "description": "",
+  "type": "module",
+  "description": "Aplicacion de logistica para la gestion de pedidos y envios",
   "main": "index.js",
   "scripts": {
     "dev": "node --watch src/index.js",

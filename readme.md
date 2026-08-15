@@ -88,6 +88,16 @@ PUT	/api/users/:id	Actualizar un usuario
 DELETE	/api/users/:id	Eliminar un usuario
 
 
+##Mocking (Módulo 2)
+
+Método	Endpoint	Descripción
+GET	/api/mocks/users?qty=N	Generar N usuarios sin guardarlos
+GET	/api/mocks/orders?qty=N	Generar N pedidos sin guardarlos
+GET	/api/mocks/deliveries?qty=N	Generar N entregas sin guardarlas
+POST	/api/mocks/seed?qty=N	Insertar datos de prueba en MongoDB con relaciones válidas
+
+
+
                         **Ejemplos de Uso**
 Crear un producto
 bash:
@@ -96,7 +106,7 @@ curl -X POST http://localhost:3000/api/products \
   -d '{"name":"Mouse Gamer","price":25.99,"stock":10,"category":"Periféricos"}'
 
 Listar productos disponibles
-bash:
+bash
 curl http://localhost:3000/api/products?onlyAvailable=true
 
 Crear un usuario
@@ -104,6 +114,81 @@ bash
 curl -X POST http://localhost:3000/api/users \
   -H "Content-Type: application/json" \
   -d '{"name":"Juan Pérez","email":"juan@test.com","password":"123456","role":"user"}'
+
+**Mocking y Datos de Prueba
+Generar usuarios de prueba (sin guardar)
+bash
+curl "http://localhost:3000/api/mocks/users?qty=5"
+
+Respuesta esperada:
+
+json
+Copy
+[
+  {
+    "name": "Ana Pérez",
+    "email": "ana.perez@gmail.com",
+    "password": "aB3xY9zQ",
+    "role": "user",
+    "active": true
+  },
+  {
+    "name": "Luis Gómez",
+    "email": "luis.gomez@hotmail.com",
+    "password": "kL8mN2pR",
+    "role": "courier",
+    "active": true
+  }
+]
+Generar pedidos de prueba (sin guardar)
+bash
+Copy
+curl "http://localhost:3000/api/mocks/orders?qty=3"
+Insertar datos de prueba en la base de datos (seed)
+bash
+Copy
+curl -X POST "http://localhost:3000/api/mocks/seed?qty=10"
+Respuesta esperada:
+
+json
+Copy
+{
+  "message": "Datos de prueba insertados correctamente",
+  "insertados": {
+    "usuarios": 13,
+    "pedidos": 15,
+    "entregas": 15
+  }
+}
+
+
+¿Qué hace el seed?
+-Inserta qty usuarios (clientes) + ~33% repartidores
+-Crea ~1.5 pedidos por cliente (asociados a clientes reales)
+-Genera 1 entrega por pedido (asignadas a repartidores reales)
+
+Todas las relaciones son válidas:
+-Los pedidos apuntan a usuarios que existen
+-Las entregas apuntan a pedidos que existen
+-Las entregas están asignadas a usuarios con role: 'courier'
+
+El sistema maneja relaciones entre entidades para simular un flujo de logística real:
+
+User (cliente) ──hace──→ Order (pedido)
+↓
+genera una
+↓
+Delivery (entrega) ←──asignada a── User (repartidor)
+
+
+** Mapeo de Roles (Mocking): Todos los endpoints de mocking respetan este mapeo y usan las constantes definidas (nunca strings sueltos).
+
+#Validaciones de Relaciones
+
+- Un **pedido** solo puede asociarse a un usuario con `role: 'user'` (cliente)
+- Una **entrega** solo puede asignarse a un usuario con `role: 'courier'` (repartidor)
+- Los **totales** de los pedidos se calculan sumando `precio × cantidad` de cada item
+- La fecha de entrega (`deliveredAt`) solo se llena si el estado es `'delivered'`
 
 
             ** Decisiones de Diseño**

@@ -8,6 +8,8 @@ Este proyecto sigue una arquitectura de capas claramente separadas:
 src/
 ├── config/ # Configuración centralizada y validación de entorno
 ├── constants/ # Diccionario de constantes del dominio
+├── errors/ # Sistema de errores personalizados (Módulo 3)
+├── middlewares/ # Middleware global de manejo de errores (Módulo 3)
 ├── models/ # Esquemas de Mongoose (estructura de datos)
 ├── repositories/ # Capa de acceso a datos (única que conoce MongoDB)
 ├── services/ # Lógica de negocio
@@ -95,6 +97,152 @@ GET	/api/mocks/users?qty=N	Generar N usuarios sin guardarlos
 GET	/api/mocks/orders?qty=N	Generar N pedidos sin guardarlos
 GET	/api/mocks/deliveries?qty=N	Generar N entregas sin guardarlas
 POST	/api/mocks/seed?qty=N	Insertar datos de prueba en MongoDB con relaciones válidas
+
+
+            ##Sistema de Manejo de Errores Profesional (modulo3)
+
+##Características Principales
+
+- **Centralizado**: Un único middleware maneja TODOS los errores (no hay respuestas dispersas en controllers)
+- **Errores del dominio**: Clases personalizadas para cada caso de negocio (`UserNotFoundError`, `DuplicateEmailError`, etc.)
+- **Respuestas uniformes**: Estructura consistente con `success`, `code`, `message` y `details`
+- **Seguridad**: Stack trace solo en desarrollo, mensajes genéricos para bugs en producción
+- **Validaciones robustas**: El módulo de mocking valida cantidades, valores negativos y fallas de base de datos
+
+##Estructura de Respuesta de Error
+
+Todas las respuestas de error siguen este formato uniforme:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Mensaje descriptivo en español",
+    "details": {
+      // Información contextual específica del error
+    },
+    "stack": "..." // Solo en NODE_ENV=development
+  }
+}
+
+    ##Códigos de Error Disponibles
+
+Código	               HTTP Status	    Descripción	                    Detalles Incluidos
+USER_NOT_FOUND	          404	          Usuario no encontrado	                userId
+PRODUCT_NOT_FOUND	        404	          Producto no encontrado	              productId
+ORDER_NOT_FOUND	          404	          Pedido no encontrado	                orderId
+DELIVERY_NOT_FOUND	      404	          Entrega no encontrada	                deliveryId
+DUPLICATE_EMAIL	          409	          Email ya registrado	                  email
+INVALID_ORDER_STATUS	    400	          Estado de pedido inválido	            invalidStatus, allowedStatuses
+INVALID_MOCK_QUANTITY	    400	          Cantidad de mocking fuera de rango	  receivedQuantity, allowedRange
+NEGATIVE_VALUE_ERROR	    400	          Valor negativo no permitido	          field, receivedValue
+DATABASE_INSERTION_ERROR	500	          Error al insertar en MongoDB	        collection, originalError
+INTERNAL_ERROR	          500	          Error genérico no controlado	              -
+
+
+--Ejemplos de Respuestas de Error--
+Usuario no encontrado (404)
+bash
+curl http://localhost:3000/api/users/673d4f8e9b1a2c3d4e5f6789
+
+Respuesta:
+json
+{
+  "success": false,
+  "error": {
+    "code": "USER_NOT_FOUND",
+    "message": "Usuario no encontrado",
+    "details": {
+      "userId": "673d4f8e9b1a2c3d4e5f6789"
+    }
+  }
+}
+
+Email duplicado (409)
+bash
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Juan","email":"existente@test.com","password":"123456","role":"user"}'
+
+Respuesta:
+json
+{
+  "success": false,
+  "error": {
+    "code": "DUPLICATE_EMAIL",
+    "message": "El email ya está registrado",
+    "details": {
+      "email": "existente@test.com"
+    }
+  }
+}
+
+Cantidad de mocking inválida (400)
+bash
+# Cantidad negativa
+curl "http://localhost:3000/api/mocks/users?qty=-5"
+
+# Cantidad muy grande
+curl "http://localhost:3000/api/mocks/users?qty=200"
+
+# Cantidad no numérica
+curl "http://localhost:3000/api/mocks/users?qty=abc"
+
+Respuesta:
+json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_MOCK_QUANTITY",
+    "message": "La cantidad de datos de prueba debe ser un número positivo entre 1 y 100. Recibido: -5",
+    "details": {
+      "receivedQuantity": "-5",
+      "allowedRange": "1-100"
+    }
+  }
+}
+
+Arquitectura del Sistema de Errores
+src/
+├── errors/
+│   ├── AppError.js              # Clase base para todos los errores personalizados
+│   └── index.js                 # Diccionario de errores del dominio
+│
+├── middlewares/
+│   └── error.middleware.js      # Middleware global (ÚNICO lugar que responde errores)
+│
+├── services/
+│   └── *.service.js            # DETECTAN errores y lanzan excepciones personalizadas
+│
+└── controllers/
+    └── *.controller.js         # DERIVAN errores al middleware con next(error)
+
+
+Flujo:
+Service detecta un problema → lanza throw new UserNotFoundError(id)
+Controller atrapa el error → llama next(error)
+Middleware recibe el error → responde con formato uniforme
+
+
+--Seguridad: Desarrollo vs Producción--
+En desarrollo (NODE_ENV=development):
+- Stack trace completo
+- Mensajes de error detallados
+
+
+En producción (NODE_ENV=production):
+- Stack trace oculto
+- Detalles internos ocultos para bugs no controlados
+- Solo mensaje genérico: "Error interno del servidor"
+- Validaciones del Módulo de Mocking
+
+El módulo de mocking (/api/mocks/*) valida:
+Validación	Código de Error	Descripción
+qty < 1	INVALID_MOCK_QUANTITY	Rechaza cantidades negativas o cero
+qty > 100	INVALID_MOCK_QUANTITY	Limita a 100 registros por request
+qty = 'abc'	INVALID_MOCK_QUANTITY	Rechaza valores no numéricos
+Falla en MongoDB	DATABASE_INSERTION_ERROR	Captura errores al insertar usuarios/pedidos/entregas
 
 
 

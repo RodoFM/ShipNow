@@ -38,11 +38,11 @@ class MockService {
     }));
   }
 
-  // ────────────────────────────────────────────────
+  
   // PEDIDOS (Orders)
   // Necesita IDs de usuarios reales para respetar la relación pedido ↔ usuario.
   // Si no le pasamos userIds, genera un ObjectId falso.
-  // ────────────────────────────────────────────────
+  
   generateOrder(userIds = []) {
     // Generamos entre 1 y 4 items por pedido
     const itemsCount = faker.number.int({ min: 1, max: 4 });
@@ -85,10 +85,10 @@ class MockService {
     return Array.from({ length: qty }, () => this.generateOrder(userIds));
   }
 
-  // ────────────────────────────────────────────────
+  
   // ENTREGAS (Deliveries)
   // Respeta relaciones: entrega/pedido, y courier con rol coherente.
-  // ────────────────────────────────────────────────
+  
   generateDelivery(orderIds = [], courierIds = []) {
     const status = faker.helpers.arrayElement(Object.values(DELIVERY_STATUS));
 

@@ -1,71 +1,56 @@
 //Puerta de entrada HTTPde la app, recibe las requests y devuelve las responses. No tiene lógica de negocio, solo llama al Service y devuelve la respuesta.
+
 import UserService from '../services/user.service.js';
 
 class UserController {
   // GET /users  (opcional: ?onlyActive=true)
-  async getAll(req, res) {
+  async getAll(req, res, next) {
     try {
       const onlyActive = req.query.onlyActive === 'true';
       const users = await UserService.getAll({ onlyActive });
       return res.status(200).json(users);
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      next(error);
     }
   }
 
   // GET /users/:id
-  async getById(req, res) {
+  async getById(req, res, next) {
     try {
       const user = await UserService.getById(req.params.id);
       return res.status(200).json(user);
     } catch (error) {
-      if (error.message === 'Usuario no encontrado') {
-        return res.status(404).json({ message: error.message });
-      }
-      return res.status(500).json({ message: error.message });
+      next(error);
     }
   }
 
   // POST /users
-  async create(req, res) {
+  async create(req, res, next) {
     try {
       const newUser = await UserService.create(req.body);
       return res.status(201).json(newUser);
     } catch (error) {
-      // Si el error es de email duplicado, es un 400 (bad request)
-      if (error.message === 'El email ya está registrado') {
-        return res.status(400).json({ message: error.message });
-      }
-      return res.status(400).json({ message: error.message });
+      next(error); 
     }
   }
 
   // PUT /users/:id
-  async update(req, res) {
+  async update(req, res, next) {
     try {
       const updated = await UserService.update(req.params.id, req.body);
       return res.status(200).json(updated);
     } catch (error) {
-      if (error.message === 'Usuario no encontrado') {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes('email ya está registrado')) {
-        return res.status(400).json({ message: error.message });
-      }
-      return res.status(400).json({ message: error.message });
+      next(error);
     }
   }
 
   // DELETE /users/:id
-  async delete(req, res) {
+  async delete(req, res, next) {
     try {
       await UserService.delete(req.params.id);
       return res.status(204).send();
     } catch (error) {
-      if (error.message === 'Usuario no encontrado') {
-        return res.status(404).json({ message: error.message });
-      }
-      return res.status(500).json({ message: error.message });
+      next(error);
     }
   }
 }

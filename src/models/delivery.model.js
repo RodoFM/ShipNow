@@ -11,7 +11,7 @@ const deliverySchema = new mongoose.Schema(
     courier: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',  //Referencia al repartidor (User con role: 'courier')
-      required: false,  // 📌 Puede estar sin asignar al principio
+      required: false,  //Puede estar sin asignar al principio
     },
     status: {
       type: String,

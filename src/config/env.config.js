@@ -2,17 +2,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const REQUIRED_ENV_VARS = ['PORT', 'MONGO_URI', 'NODE_ENV'];
+// Variables requeridas
+const REQUIRED_ENV_VARS = ['PORT', 'MONGODB_URI', 'NODE_ENV'];
 
+// Validar que existan
 for (const varName of REQUIRED_ENV_VARS) {
   if (!process.env[varName]) {
-    throw new Error(`Missing required environment variable: ${varName}`);
+    throw new Error(`ariable de entorno requerida no encontrada: ${varName}`);
   }
 }
 
 
+
 export const config = Object.freeze({
-  PORT: process.env.PORT,
-  MONGO_URI: process.env.MONGO_URI,
-  NODE_ENV: process.env.NODE_ENV,
+  port: parseInt(process.env.PORT, 10),          
+  mongodbUri: process.env.MONGODB_URI,           
+  nodeEnv: process.env.NODE_ENV,                 
 });

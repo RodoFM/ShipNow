@@ -245,6 +245,77 @@ qty = 'abc'	INVALID_MOCK_QUANTITY	Rechaza valores no numéricos
 Falla en MongoDB	DATABASE_INSERTION_ERROR	Captura errores al insertar usuarios/pedidos/entregas
 
 
+##Sistema de Logging y Monitoreo (Módulo4)
+
+Se incorpora un sistema de logging profesional con **[Winston](https://github.com/winstonjs/winston)**, reemplazando los `console.log()` dispersos por un logger centralizado que registra eventos con distintos niveles de importancia, tanto en consola como en archivos con rotación.
+
+##Herramienta utilizada
+
+- **winston**: logger principal
+- **winston-daily-rotate-file**: rotación de archivos de log por fecha
+
+##Niveles de log
+
+De mayor a menor gravedad (cada nivel incluye a los superiores):
+
+Nivel	  Uso
+fatal	  Fallas críticas (ej: no se puede conectar a MongoDB al iniciar)
+error	  Errores inesperados del servidor (bugs, fallas de inserción en DB)
+warning	Errores de negocio esperados (usuario no encontrado, qty inválida, ruta inexistente)
+info	  Eventos importantes (servidor iniciado, conexión a MongoDB, seed exitoso, usuario creado)
+http	  Registro de cada petición entrante
+debug	  Detalle fino, solo visible en desarrollo
+
+Comportamiento según el entorno
+El nivel se ajusta con la variable NODE_ENV:
+development: muestra desde debug (todos los niveles).
+production: muestra desde info (oculta debug y http).
+
+-Dónde se guardan los logs: Los archivos se generan en la carpeta /logs (en la raíz del proyecto):
+
+Archivo	              Contenido
+error-<fecha>.log	    Solo niveles error y fatal
+combined-<fecha>.log	Todos los niveles (historial completo)
+
+Rotación: los archivos rotan por día (YYYY-MM-DD), se conservan 14 días y rotan también si superan 10 MB.
+
+-Archivos ignorados en Git
+En .gitignore se ignoran:
+node_modules
+.env
+logs/*
+!logs/.gitkeep
+
+La carpeta logs/ se conserva en el repo mediante un archivo vacío logs/.gitkeep, pero los archivos de log generados por la aplicación NO se suben a GitHub.
+
+Endpoint de prueba del logger
+Para verificar que todos los niveles funcionan:
+
+bash
+curl http://localhost:3000/api/logger-test
+Esto genera un log en cada nivel (debug, http, info, warning, error, fatal). Revisá:
+
+La consola (verás los 6 niveles con colores).
+logs/error-<fecha>.log (solo aparecerán error y fatal).
+logs/combined-<fecha>.log (aparecerán los 6 niveles).
+
+##Ejemplo de salida (consola y archivo)##
+2026-08-01 10:12:03 [info]     Servidor ShipNow escuchando en el puerto 3000
+2026-08-01 10:12:03 [info]     Conexión a MongoDB establecida
+2026-08-01 10:14:21 [warning]  Pedido #A-102 sin repartidor asignado
+2026-08-01 10:15:09 [error]    Falló la creación del pedido: ValidationError (campo "destino" requerido)
+
+
+-Integración con el manejo de errores (Módulo 3)
+El middleware global de errores ahora también registra cada error con Winston:
+
+Errores de negocio (AppError con status < 500) → se loguean como warning.
+Errores operacionales 5xx (ej: DATABASE_INSERTION_ERROR) → se loguean como error.
+Errores no controlados (bugs) → se loguean como error con el stack completo.
+Fallo de conexión inicial a MongoDB → se loguea como fatal.
+
+El logger no reemplaza al manejo de errores: lo complementa. La respuesta al cliente sigue siendo la misma estructura uniforme del Módulo 3.
+
 
                         **Ejemplos de Uso**
 Crear un producto

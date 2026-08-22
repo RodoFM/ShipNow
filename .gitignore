@@ -1,2 +1,13 @@
+# Dependencias
 node_modules
+
+# Variables de entorno
 .env
+
+# Logs generados por la aplicación (Módulo 4)
+# La carpeta se conserva en el repo (ver logs/.gitkeep) pero NO sus archivos.
+logs/*
+!logs/.gitkeep
+
+# Sistema
+.DS_Store

@@ -1,6 +1,7 @@
 //Puerta de entrada HTTPde la app, recibe las requests y devuelve las responses. No tiene lógica de negocio, solo llama al Service y devuelve la respuesta.
 
 import UserService from '../services/user.service.js';
+import logger from '../config/logger.js';
 
 class UserController {
   // GET /users  (opcional: ?onlyActive=true)
@@ -28,6 +29,7 @@ class UserController {
   async create(req, res, next) {
     try {
       const newUser = await UserService.create(req.body);
+      logger.info(`Usuario creado correctamente (id: ${newUser._id})`);
       return res.status(201).json(newUser);
     } catch (error) {
       next(error); 

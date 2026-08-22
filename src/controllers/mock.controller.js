@@ -1,6 +1,7 @@
 import MockService from '../services/mock.service.js';
 import MockRepository from '../repositories/mock.repository.js';
 import { USER_ROLES } from '../constants/index.js';
+import logger from '../config/logger.js';
 import {
   InvalidMockQuantityError,
   DatabaseInsertionError,
@@ -27,6 +28,7 @@ class MockController {
     try {
       const qty = validateQuantity(req.query.qty ?? 5);
       const users = MockService.generateUsers(qty);
+      logger.info(`Mock: se generaron ${users.length} usuarios (sin persistir)`);
       return res.status(200).json(users);
     } catch (error) {
       next(error);
@@ -38,6 +40,7 @@ class MockController {
     try {
       const qty = validateQuantity(req.query.qty ?? 3);
       const orders = MockService.generateOrders(qty);
+      logger.info(`Mock: se generaron ${orders.length} pedidos (sin persistir)`);
       return res.status(200).json(orders);
     } catch (error) {
       next(error);
@@ -49,6 +52,7 @@ class MockController {
     try {
       const qty = validateQuantity(req.query.qty ?? 3);
       const deliveries = MockService.generateDeliveries(qty);
+      logger.info(`Mock: se generaron ${deliveries.length} entregas (sin persistir)`);
       return res.status(200).json(deliveries);
     } catch (error) {
       next(error);
@@ -60,6 +64,7 @@ class MockController {
   async seedDatabase(req, res, next) {
     try {
       const qty = validateQuantity(req.query.qty ?? 10);
+      logger.info(`Mock seed: iniciando carga de datos de prueba (qty=${qty})`);
 
       // PASO 1: usuarios (clientes + repartidores)
       let insertedUsers;
@@ -104,6 +109,10 @@ class MockController {
       } catch (dbError) {
         throw new DatabaseInsertionError('deliveries', dbError);
       }
+
+      logger.info(
+        `Mock seed: OK → ${insertedUsers.length} usuarios, ${insertedOrders.length} pedidos, ${insertedDeliveries.length} entregas`
+      );
 
       return res.status(201).json({
         message: 'Datos de prueba insertados correctamente',

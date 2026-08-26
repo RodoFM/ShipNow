@@ -2,6 +2,7 @@ import express from 'express';
 import { config } from './config/env.config.js';
 import { connectDB } from './config/db.js';
 import logger from './config/logger.js';
+import { setupSwagger } from './docs/swagger.js';
 
 // Rutas
 import userRoutes from './routes/user.routes.js';
@@ -21,6 +22,9 @@ const app = express();
 // ── Middlewares generales ──
 app.use(express.json());
 app.use(requestLogger); // registra cada request (nivel http)
+
+// ── Documentación Swagger / OpenAPI ── disponible en /api/docs
+setupSwagger(app);
 
 // ── Rutas ──
 app.use('/api/users', userRoutes);

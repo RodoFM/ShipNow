@@ -317,6 +317,79 @@ Fallo de conexión inicial a MongoDB → se loguea como fatal.
 El logger no reemplaza al manejo de errores: lo complementa. La respuesta al cliente sigue siendo la misma estructura uniforme del Módulo 3.
 
 
+## Documentación de la API con Swagger (Módulo 5)
+
+El **Módulo 5** incorpora documentación técnica interactiva con **[Swagger UI](https://swagger.io/tools/swagger-ui/) / OpenAPI 3.0**, donde se pueden consultar y **probar** todos los endpoints principales desde el navegador.
+
+###Ruta de acceso
+
+Con el servidor corriendo, la documentación está disponible en:
+http://localhost:3000/api/docs
+
+También se expone el documento OpenAPI en formato JSON (útil para importar en Postman/Insomnia):
+http://localhost:3000/api/docs.json
+
+
+### Cómo levantar el servidor
+
+bash
+# 1) Instalar dependencias
+npm install
+
+# 2) Crear el archivo .env (ver .env.example) con PORT, MONGODB_URI y NODE_ENV
+
+# 3) Arrancar el servidor
+node src/index.js
+
+Luego abrí http://localhost:3000/api/docs en el navegador.
+
+Módulos documentados (agrupados por tags)
+Tag     	Contenido
+Users	    CRUD completo de usuarios (GET, GET/:id, POST, PUT, DELETE)
+Products	CRUD completo de productos (GET, GET/:id, POST, PUT, DELETE)
+Mocks	    Generación de datos de prueba (users/orders/deliveries) e inserción en la base (seed)
+Logger	  Endpoint de prueba del logger (herramienta interna, no es funcionalidad de negocio)
+
+Cada endpoint documenta: método HTTP, ruta, descripción, parámetros (de ruta y query), body esperado, respuesta exitosa y posibles errores.
+
+Schemas reutilizables
+Se definen schemas reutilizables (referenciados con $ref) para las entidades y respuestas:
+
+User / UserInput
+Product / ProductInput
+Order y OrderItem (item de pedido)
+Delivery
+Address (dirección, compartida por Order y Delivery)
+ErrorResponse (estructura uniforme de error del Módulo 3)
+SuccessResponse (respuesta exitosa genérica, ej: seed)
+
+Errores documentados (coinciden con los reales)
+La documentación refleja exactamente los errores que devuelve la API:
+
+Código	                                                  Situación
+VALIDATION_ERROR	                                        Datos inválidos
+USER_NOT_FOUND / PRODUCT_NOT_FOUND / ROUTE_NOT_FOUND	    Recurso o ruta no encontrada (404)
+DUPLICATE_EMAIL                                        	  Email ya registrado (409)
+INVALID_MOCK_QUANTITY	                                    Cantidad inválida en mocks (fuera de 1–100)
+DATABASE_INSERTION_ERROR / INTERNAL_ERROR	                Error interno del servidor (500)
+
+Organización (configuración separada de las rutas)
+La configuración de Swagger vive en su propia carpeta, separada de la lógica de rutas:
+
+src/docs/
+├── swagger.js            → arma el documento OpenAPI y monta Swagger UI
+├── components.js         → schemas y respuestas de error reutilizables
+└── paths/
+    ├── users.paths.js
+    ├── products.paths.js
+    ├── mocks.paths.js
+    └── logger.paths.js
+
+En index.js solo se llama a setupSwagger(app), sin ensuciar las rutas del negocio.
+
+**Nota sobre Pedidos y Entregas: los modelos Order y Delivery existen y se generan mediante el módulo de Mocks, pero todavía no tienen endpoints CRUD propios. Por eso sus schemas están documentados (aparecen en las respuestas de mocks), pero no hay tags Orders/Deliveries con rutas propias: la documentación refleja la API real.***
+
+
                         **Ejemplos de Uso**
 Crear un producto
 bash:

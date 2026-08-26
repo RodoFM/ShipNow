@@ -34,7 +34,6 @@ export class InternalServerError extends AppError {
 
 // ---ERRORES ESPECÍFICOS DEL DOMINIO - USUARIOS---
 
-
 export class UserNotFoundError extends NotFoundError {
   constructor(userId = null) {
     super(
@@ -57,7 +56,6 @@ export class DuplicateEmailError extends ConflictError {
 
 
 // ---ERRORES ESPECÍFICOS DEL DOMINIO - PRODUCTOS---
-
 
 export class ProductNotFoundError extends NotFoundError {
   constructor(productId = null) {
@@ -103,7 +101,7 @@ export class InvalidOrderStatusError extends ValidationError {
 }
 
 
-// ---ERRORES ESPECÍFICOS DEL DOMULO DE MOCKING---
+// ---ERRORES ESPECÍFICOS DEL DOMINIO DE MOCKING---
 
 export class InvalidMockQuantityError extends ValidationError {
   constructor(qty) {
@@ -137,6 +135,5 @@ export class DatabaseInsertionError extends InternalServerError {
 
 
 // RE-EXPORTAR AppError para facilitar importaciones
-
 
 export { AppError };

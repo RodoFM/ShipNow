@@ -363,7 +363,7 @@ Address (dirección, compartida por Order y Delivery)
 ErrorResponse (estructura uniforme de error del Módulo 3)
 SuccessResponse (respuesta exitosa genérica, ej: seed)
 
-Errores documentados (coinciden con los reales)
+**Errores documentados (coinciden con los reales)
 La documentación refleja exactamente los errores que devuelve la API:
 
 Código	                                                  Situación
@@ -373,7 +373,7 @@ DUPLICATE_EMAIL                                        	  Email ya registrado (4
 INVALID_MOCK_QUANTITY	                                    Cantidad inválida en mocks (fuera de 1–100)
 DATABASE_INSERTION_ERROR / INTERNAL_ERROR	                Error interno del servidor (500)
 
-Organización (configuración separada de las rutas)
+**Organización (configuración separada de las rutas)
 La configuración de Swagger vive en su propia carpeta, separada de la lógica de rutas:
 
 src/docs/
@@ -388,6 +388,103 @@ src/docs/
 En index.js solo se llama a setupSwagger(app), sin ensuciar las rutas del negocio.
 
 **Nota sobre Pedidos y Entregas: los modelos Order y Delivery existen y se generan mediante el módulo de Mocks, pero todavía no tienen endpoints CRUD propios. Por eso sus schemas están documentados (aparecen en las respuestas de mocks), pero no hay tags Orders/Deliveries con rutas propias: la documentación refleja la API real.***
+
+--Testing Funcional Automatizado (Módulo 6)--
+
+El **Módulo 6** incorpora una suite de **tests funcionales automatizados** que verifican el comportamiento real de la API de punta a punta (peticiones HTTP reales contra la app Express), usando una **base de datos de testing separada** para no tocar los datos de desarrollo.
+
+##Herramientas utilizadas
+
+| Herramienta                                       | Rol 
+[Mocha](https://mochajs.org/)                       | Framework de testing (organiza y corre los tests) 
+[Chai](https://www.chaijs.com/)                     | Librería de aserciones (`expect`) 
+[Supertest](https://github.com/ladjs/supertest)     | Realiza peticiones HTTP reales a la app Express sin abrir un puerto 
+[cross-env](https://github.com/kentcdodds/cross-env)| Setea `NODE_ENV=test` de forma multiplataforma (Windows/Linux/Mac) 
+
+##Entorno de testing separado
+
+Para garantizar **datos controlados y repetibles**, el testing corre totalmente aislado del entorno de desarrollo:
+
+- **Archivo `.env.test`**: define una base de datos exclusiva para tests.
+  ```env
+  PORT=3001
+  MONGODB_URI=mongodb://127.0.0.1:27017/shipnow_test
+  NODE_ENV=test
+  ```
+
+- Cuando `NODE_ENV=test`, `src/config/env.config.js` carga automáticamente `.env.test` en vez de `.env`, por lo que *los tests nunca tocan la base de datos de desarrollo*.
+- **`src/app.js` separado del servidor*: la app Express (rutas + middlewares) se define en `src/app.js` *sin* llamar a `connectDB()` ni a `app.listen()`. Esto permite *importar la app en los tests* sin abrir un puerto real. `src/index.js` solo se encarga de conectar la BD y levantar el servidor en producción/desarrollo.
+
+##Datos controlados y repetibles
+
+Los *root hooks* de Mocha viven en `test/setup.js` y garantizan aislamiento total entre tests:
+
+| Hook        | Cuándo corre                      | Qué hace 
+| `beforeAll` | 1 vez, al inicio de toda la suite | Conecta a la BD de test 
+| `afterAll`  | 1 vez, al final de toda la suite  | Desconecta de la BD 
+| `beforeEach`| Antes de *cada* test              | *Limpia todas las colecciones* cada test parte de una BD vacía y no depende del anterior   
+
+Esto asegura que los tests sean **repetibles** (mismo resultado siempre) e **independientes** entre sí.
+
+##Estructura de los tests
+
+test/
+├── setup.js            → root hooks (conexión + limpieza automática entre tests)
+├── users.test.js       → CRUD de usuarios + errores (404, 409)
+├── products.test.js    → CRUD de productos + lógica de status según stock + errores (404)
+├── mocks.test.js       → generación de mocks (users/orders/deliveries) + seed + validación de qty
+├── logger.test.js      → endpoint de prueba del logger (estructura de respuesta)
+└── general.test.js     → ruta raíz, documentación (/api/docs.json) y rutas inexistentes (404)
+
+
+##Cobertura de casos
+
+Los tests cubren **todos los endpoints reales** de la API, con **casos exitosos y de error**:
+
+- **Usuarios** (`/api/users`): listar (vacío / con datos / filtrado por activos), crear (201), email duplicado (409), obtener por ID (200 / 404), actualizar (200 / 404 / 409), eliminar (204 / 404).
+- **Productos** (`/api/products`): listar (vacío / con datos / filtrado por disponibles), crear (201) con status automático según stock, obtener por ID (200 / 404), actualizar (200 / 404) con recálculo de status, eliminar (204 / 404).
+- **Mocks** (`/api/mocks`): generar users/orders/deliveries con qty por defecto y personalizada, validación de cantidad (0, >100, no numérica → 400), verificación de que los GET **no persisten**, y seed que **sí persiste** (201).
+- **Logger** (`/api/logger-test`): estructura de respuesta y niveles de log.
+- **Generales**: ruta raíz `/`, documentación OpenAPI `/api/docs.json`, y rutas inexistentes → 404 `ROUTE_NOT_FOUND`.
+
+###Cómo correr los tests
+
+**Requisito previo:** tener **MongoDB corriendo** localmente (los tests usan la base `shipnow_test`, que se crea sola).
+
+```bash
+# 1) Instalar dependencias (si no lo hiciste aún)
+npm install
+
+# 2) Correr toda la suite de tests
+npm test
+```
+
+El script `test` de `package.json` ejecuta:
+
+```json
+"test": "cross-env NODE_ENV=test mocha"
+```
+
+`cross-env` setea `NODE_ENV=test` (por lo que se carga `.env.test`), y Mocha toma la configuración de `.mocharc.cjs` (archivos de test, timeout y carga de los root hooks).
+
+##Resultado esperado
+
+```
+  🌐 General — Raíz, Documentación y 404
+    ✔ ... (varios tests)
+  📋 Logger — /api/logger-test
+    ✔ ... 
+  🎲 Mocks — /api/mocks
+    ✔ ...
+  📦 Products — /api/products
+    ✔ ...
+  👤 Users — /api/users
+    ✔ ...
+
+  62 passing (557ms)
+```
+
+**Nota:** como no existen endpoints CRUD propios de `Order`/`Delivery` (solo se generan vía Mocks), sus casos se cubren dentro de los tests de **Mocks** (generación y seed), reflejando la API **real**.
 
 
                         **Ejemplos de Uso**

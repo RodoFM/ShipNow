@@ -8,6 +8,7 @@ import { usersPaths } from './paths/users.paths.js';
 import { productsPaths } from './paths/products.paths.js';
 import { mocksPaths } from './paths/mocks.paths.js';
 import { loggerPaths } from './paths/logger.paths.js';
+import { uploadPaths } from './paths/upload.paths.js';
 
 //Documento OpenAPI 3.0 
 const openapiSpec = {
@@ -49,6 +50,7 @@ const openapiSpec = {
     ...productsPaths,
     ...mocksPaths,
     ...loggerPaths,
+    ...uploadPaths,
   },
   // Componentes reutilizables: schemas y respuestas de error
   components: {

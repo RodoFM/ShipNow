@@ -29,6 +29,17 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    documents: [
+      {
+        originalName:   { type: String, required: true },
+        generatedName:  { type: String, required: true },
+        path:           { type: String, required: true },
+        mimetype:       { type: String, required: true },
+        size:           { type: Number, required: true },
+        documentType:   { type: String, required: true },
+        uploadedAt:     { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

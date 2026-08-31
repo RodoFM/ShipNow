@@ -10,6 +10,7 @@ import userRoutes from './routes/user.routes.js';
 import productRoutes from './routes/products.routes.js';
 import mockRoutes from './routes/mocks.routes.js';
 import loggerRoutes from './routes/logger.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 
 // Middlewares
 import { errorHandler } from './middlewares/error.middleware.js';
@@ -32,6 +33,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/mocks', mockRoutes);
 app.use('/api/logger-test', loggerRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.json({

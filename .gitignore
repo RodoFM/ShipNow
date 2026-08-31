@@ -11,3 +11,8 @@ logs/*
 
 # Sistema
 .DS_Store
+
+# Archivos subidos por usuarios (Módulo 7)
+# Solo van los metadatos en la BD; los archivos físicos quedan fuera del repo.
+uploads/*
+!uploads/.gitkeep

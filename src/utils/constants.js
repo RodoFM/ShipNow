@@ -38,3 +38,27 @@ export const DELIVERY_STATUS = Object.freeze({
   DELIVERED: 'delivered',     // Entregada
   FAILED: 'failed',           // Falló la entrega
 });
+
+// Tipos de documento permitidos para usuarios
+export const USER_DOCUMENT_TYPES = Object.freeze({
+  DNI: 'dni',
+  LICENCIA: 'licencia',
+  CONTRATO: 'contrato',
+});
+
+// Tipos de comprobante permitidos para pedidos y entregas
+export const RECEIPT_TYPES = Object.freeze({
+  COMPROBANTE: 'comprobante',
+  FOTO: 'foto',
+  FIRMA: 'firma',
+});
+
+// Tipos MIME permitidos para uploads
+export const ALLOWED_MIME_TYPES = Object.freeze([
+  'image/jpeg',
+  'image/png',
+  'application/pdf',
+]);
+
+// Tamaño máximo de archivo (5 MB en bytes)
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;

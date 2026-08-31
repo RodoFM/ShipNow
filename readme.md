@@ -439,7 +439,7 @@ test/
 
 ##Cobertura de casos
 
-Los tests cubren **todos los endpoints reales** de la API, con **casos exitosos y de error**:
+Los tests cubren *todos los endpoints reales* de la API, con *casos exitosos y de error*:
 
 - **Usuarios** (`/api/users`): listar (vacío / con datos / filtrado por activos), crear (201), email duplicado (409), obtener por ID (200 / 404), actualizar (200 / 404 / 409), eliminar (204 / 404).
 - **Productos** (`/api/products`): listar (vacío / con datos / filtrado por disponibles), crear (201) con status automático según stock, obtener por ID (200 / 404), actualizar (200 / 404) con recálculo de status, eliminar (204 / 404).
@@ -449,7 +449,7 @@ Los tests cubren **todos los endpoints reales** de la API, con **casos exitosos 
 
 ###Cómo correr los tests
 
-**Requisito previo:** tener **MongoDB corriendo** localmente (los tests usan la base `shipnow_test`, que se crea sola).
+**Requisito previo:** tener *MongoDB corriendo* localmente (los tests usan la base `shipnow_test`, que se crea sola).
 
 ```bash
 # 1) Instalar dependencias (si no lo hiciste aún)
@@ -485,6 +485,79 @@ El script `test` de `package.json` ejecuta:
 ```
 
 **Nota:** como no existen endpoints CRUD propios de `Order`/`Delivery` (solo se generan vía Mocks), sus casos se cubren dentro de los tests de **Mocks** (generación y seed), reflejando la API **real**.
+
+
+              ##Sistema de Subida de Archivos con Multer (Módulo 7)
+
+El *Módulo 7* incorpora un sistema de **carga de archivos** (documentos de usuario y comprobantes de pedidos/entregas) usando **[Multer](https://github.com/expressjs/multer)**, con la configuración **centralizada** y separada de los routers, validaciones conectadas al sistema de errores del proyecto y documentación en Swagger.
+
+##Herramienta utilizada
+
+Herramienta   	Rol
+Multer        	Middleware para procesar multipart/form-data (subida de archivos)
+
+-Endpoints disponibles
+Método	Endpoint	                           Campo (form-data)	Tipos válidos (documentType)	  Carpeta destino
+POST	  /api/uploads/users/:id/documents	    document	        dni, licencia, contrato	        uploads/documents/
+POST	  /api/uploads/orders/:id/receipts	    receipt	          comprobante, foto, firma	      uploads/receipts/
+POST	  /api/uploads/deliveries/:id/receipts	receipt	          comprobante, foto, firma	      uploads/receipts/
+
+*Validaciones aplicadas*
+-Tipos MIME permitidos: image/jpeg, image/png, application/pdf
+-Tamaño máximo: 5 MB por archivo
+-Archivo requerido: debe adjuntarse el archivo en el campo correcto
+-documentType válido: según la tabla de arriba (usa constantes, nunca strings sueltos)
+-La entidad debe existir: el usuario/pedido/entrega debe estar en la base de datos
+
+
+**Solo metadata en la base de datos**
+El archivo físico NUNCA se guarda en MongoDB. Solo se almacena su metadata (originalName, generatedName, path, mimetype, size, documentType, uploadedAt) en un array dentro de la entidad correspondiente (User.documents[], Order.receipts[], Delivery.receipts[]). El archivo real queda en disco bajo uploads/, con un nombre único (timestamp-uuid.ext) para evitar colisiones.
+
+**Configuración centralizada (separada de las rutas)**
+La configuración de Multer vive en un único archivo, fuera de los routers:
+
+src/config/multer.config.js   → storage, fileFilter (MIME), limits (tamaño) y handleMulterError
+El wrapper handleMulterError convierte los errores propios de Multer (ej: LIMIT_FILE_SIZE) a los errores personalizados del proyecto (FileSizeLimitError, etc.), para que el middleware global de errores (Módulo 3) los responda con el mismo formato uniforme que el resto de la API.
+
+Errores documentados (formato estándar)
+Código	                                                HTTP	            Situación
+FILE_REQUIRED	                                          400	              No se adjuntó archivo
+INVALID_FILE_TYPE	                                      400	              Tipo MIME no permitido
+INVALID_DOCUMENT_TYPE	                                  400	              documentType fuera de los valores aceptados
+FILE_TOO_LARGE	                                        413	               El archivo supera los 5 MB
+USER_NOT_FOUND / ORDER_NOT_FOUND / DELIVERY_NOT_FOUND	  404	               La entidad no existe
+
+*Archivos ignorados en Git**
+Al igual que con los logs, los archivos subidos no se suben al repositorio. En .gitignore:
+
+uploads/*
+!uploads/.gitkeep
+La carpeta uploads/ se conserva en el repo mediante uploads/.gitkeep, pero los archivos subidos por los usuarios quedan fuera del control de versiones.
+
+Ejemplo de uso
+bash
+#Subir el DNI (PDF) de un usuario existente
+curl -X POST http://localhost:3000/api/uploads/users/<userId>/documents \
+  -F "documentType=dni" \
+  -F "document=@/ruta/a/mi_dni.pdf"
+Respuesta esperada (201):
+
+json
+{
+  "success": true,
+  "message": "Documento cargado y asociado al usuario correctamente",
+  "document": {
+    "originalName": "mi_dni.pdf",
+    "generatedName": "1787880063400-6e236527c438.pdf",
+    "path": "uploads/documents/1787880063400-6e236527c438.pdf",
+    "mimetype": "application/pdf",
+    "size": 204800,
+    "documentType": "dni",
+    "uploadedAt": "2026-08-30T12:00:00.000Z"
+  },
+  "userId": "..."
+}
+ También puedes probar los tres endpoints de forma interactiva desde Swagger UI en http://localhost:3000/api/docs (tag Uploads), que renderiza el selector de archivos gracias a la documentación multipart/form-data.
 
 
                         **Ejemplos de Uso**

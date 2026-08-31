@@ -134,6 +134,64 @@ export class DatabaseInsertionError extends InternalServerError {
 }
 
 
+// ERRORES DE UPLOADS (Módulo 7) — Sistema de subida de archivos
+
+
+// No se envió el archivo (req.file es undefined)
+export class FileRequiredError extends AppError {
+  constructor() {
+    super('Se requiere un archivo adjunto.', 'FILE_REQUIRED', 400);
+  }
+}
+
+// Tipo MIME no permitido (ej: text/html cuando solo aceptamos jpg/png/pdf)
+export class InvalidFileTypeError extends AppError {
+  constructor(mimeType, allowedTypes) {
+    const allowed = allowedTypes.join(', ');
+    super(
+      `Tipo de archivo no permitido: "${mimeType}". Tipos aceptados: ${allowed}`,
+      'INVALID_FILE_TYPE',
+      400
+    );
+  }
+}
+
+// Archivo supera el límite de tamaño (lo detecta Multer automáticamente)
+export class FileSizeLimitError extends AppError {
+  constructor(maxSize) {
+    const maxMB = (maxSize / (1024 * 1024)).toFixed(0);
+    super(
+      `El archivo supera el tamaño máximo permitido de ${maxMB} MB.`,
+      'FILE_TOO_LARGE',
+      413
+    );
+  }
+}
+
+// El campo documentType no es uno de los valores esperados
+export class InvalidDocumentTypeError extends AppError {
+  constructor(received, allowedValues) {
+    super(
+      `Tipo de documento inválido: '${received}'. Valores aceptados: ${allowedValues.join(', ')}`,
+      'INVALID_DOCUMENT_TYPE',
+      400
+    );
+  }
+}
+
+// Error al guardar el archivo en disco (problema de I/O)
+export class FileStorageError extends AppError {
+  constructor(details) {
+    super(
+      `No se pudo guardar el archivo en el servidor.`,
+      'FILE_STORAGE_ERROR',
+      500,
+      details
+    );
+  }
+}
+
 // RE-EXPORTAR AppError para facilitar importaciones
+
 
 export { AppError };
